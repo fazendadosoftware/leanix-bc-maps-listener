@@ -1,8 +1,8 @@
 const { v4: uuidv4 } = require('uuid')
 const { rebuildBcMaps } = require('./businessLogic')
 const auth = require('basic-auth')
-const { username = null, password = null } = process.env
-if (username === null || password === null) console.warn('ENVARS "username" and "password" should be set for basic auth of POST requests')
+const { LEANIX_USERNAME: username = null, LEANIX_PASSWORD: password = null } = process.env
+if (username === null || password === null) console.warn('APP Settings "LEANIX_USERNAME" and "LEANIX_PASSWORD" should be set for basic auth of POST requests')
 
 // Initialize global variables for reuse in future calls
 let lastTransaction = -1

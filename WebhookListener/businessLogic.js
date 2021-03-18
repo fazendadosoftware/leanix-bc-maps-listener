@@ -1,8 +1,8 @@
 const { Authenticator, GraphQLClient } = require('leanix-js')
-const { instance = null, apiToken = null } = process.env
+const { LEANIX_INSTANCE: instance = null, LEANIX_APITOKEN: apiToken = null } = process.env
 
-if (instance === null) throw Error('ENVAR instance is not defined')
-if (apiToken === null) throw Error('ENVAR apiToken is not defined')
+if (instance === null) throw Error('App Setting LEANIX_INSTANCE is not defined!')
+if (apiToken === null) throw Error('App Setting LEANIX_APITOKEN is not defined!')
 
 const authenticator = new Authenticator(instance, apiToken)
 const graphql = new GraphQLClient(authenticator)
