@@ -23,7 +23,14 @@ module.exports = async function (context, req) {
         return
       }
     }
-    context.res = { body: JSON.stringify(bcMaps, null, 2) }
+    context.res = {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      }
+      body: JSON.stringify(bcMaps, null, 2)
+    }
   } else if ((type === 'FactSheetUpdatedEvent') && (fsType === 'BusinessCapability') && (lastTransaction < transactionSequenceNumber)) {
     if (username !== null && password !== null) {
       const { name: providedUsername = null, pass: providedPassword = null } = auth(req) || {}
