@@ -28,7 +28,7 @@ module.exports = async function (context, req) {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
-      }
+      },
       body: JSON.stringify(bcMaps, null, 2)
     }
   } else if ((type === 'FactSheetUpdatedEvent') && (fsType === 'BusinessCapability') && (lastTransaction < transactionSequenceNumber)) {
