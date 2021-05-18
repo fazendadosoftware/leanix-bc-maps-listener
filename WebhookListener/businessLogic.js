@@ -8,7 +8,7 @@ if (hsFolder === null) console.warn('App Settings "HUBSPOT_FOLDER" not defined! 
 const authenticator = new Authenticator(instance, apiToken)
 const graphql = new GraphQLClient(authenticator)
 
-const generateBcMaps = async () => {
+const generateBcMaps = async context => {
   const maxHierarchyLevel = 4
   let query = `
   {
@@ -37,7 +37,8 @@ const generateBcMaps = async () => {
     try {
       description = JSON.parse(description === null ? '{}' : description)
     } catch (error) {
-      console.error(error)
+      if (context) context.error(error)
+      else console.error(error)
       description = {}
     }
 
@@ -69,14 +70,15 @@ const generateBcMaps = async () => {
   }
 }
 
-const rebuildBcMaps = async transactionSequenceNumber => {
-  const bcMaps = await generateBcMaps()
+const rebuildBcMaps = async (transactionSequenceNumber, context = null) => {
+  const bcMaps = await generateBcMaps(context)
   if (transactionSequenceNumber) bcMaps.transactionSequenceNumber = transactionSequenceNumber
-  console.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - updated bcMaps.json`)
+  if (context) context.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - updated bcMaps.json`)
+  else console.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - updated bcMaps.json`)
   return bcMaps
 }
 
-const publishToHubspot = async (bcMaps, transactionSequenceNumber) => {
+const publishToHubspot = async (bcMaps, transactionSequenceNumber, context = null) => {
   if (hsApiKey == null) throw Error('App Settings "HUBSPOT_API_KEY" not defined (Hubspot api key)! Published bcmaps.json will not be updated...')
   const form = new FormData()
   form.append('file', Buffer.from(JSON.stringify(bcMaps), 'utf-8'), { contentType: 'application/json', name: 'file', filename: 'bcmaps.json' })
@@ -88,7 +90,8 @@ const publishToHubspot = async (bcMaps, transactionSequenceNumber) => {
   const data = await response.json()
   if (ok && statusCode === 201) {
     const fileUrl = data.url
-    console.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - published bcMaps.json @ ${fileUrl}`)
+    if (context) context.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - published bcMaps.json @ ${fileUrl}`)
+    else console.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - published bcMaps.json @ ${fileUrl}`)
     return fileUrl
   } else throw Error(JSON.stringify({ statusCode, ...data }))
 }
@@ -96,7 +99,6 @@ const publishToHubspot = async (bcMaps, transactionSequenceNumber) => {
 module.exports = {
   authenticator,
   graphql,
-  generateBcMaps,
   rebuildBcMaps,
   publishToHubspot
 }
