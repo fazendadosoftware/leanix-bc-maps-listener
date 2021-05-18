@@ -1,3 +1,5 @@
+const fetch = require('node-fetch')
+const FormData = require('form-data')
 const { Authenticator, GraphQLClient } = require('leanix-js')
 const { LEANIX_INSTANCE: instance = null, LEANIX_APITOKEN: apiToken = null, HUBSPOT_API_KEY: hsApiKey = null, HUBSPOT_FOLDER: hsFolder = '' } = process.env
 if (instance === null) throw Error('App Setting LEANIX_INSTANCE is not defined!')
