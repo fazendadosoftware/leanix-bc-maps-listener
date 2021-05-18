@@ -1,8 +1,9 @@
 const { Authenticator, GraphQLClient } = require('leanix-js')
-const { LEANIX_INSTANCE: instance = null, LEANIX_APITOKEN: apiToken = null } = process.env
-
+const { LEANIX_INSTANCE: instance = null, LEANIX_APITOKEN: apiToken = null, HUBSPOT_API_KEY: hsApiKey = null, HUBSPOT_FOLDER: hsFolder = '' } = process.env
 if (instance === null) throw Error('App Setting LEANIX_INSTANCE is not defined!')
 if (apiToken === null) throw Error('App Setting LEANIX_APITOKEN is not defined!')
+if (hsApiKey === null) throw Error('App Settings "HUBSPOT_API_KEY" not defined (Hubspot api key)! Published bcmaps.json will not be updated...')
+if (hsFolder === null) console.warn('App Settings "HUBSPOT_FOLDER" not defined! Defaulting to root folder...')
 
 const authenticator = new Authenticator(instance, apiToken)
 const graphql = new GraphQLClient(authenticator)
@@ -75,13 +76,27 @@ const rebuildBcMaps = async transactionSequenceNumber => {
   return bcMaps
 }
 
-// authenticator.start()
-// authenticator.on('authenticated', () => rebuildBcMaps())
-// authenticator.on('error', err => console.error('authentication error', err))
+const publishToHubspot = async (bcMaps, transactionSequenceNumber) => {
+  if (hsApiKey == null) throw Error('App Settings "HUBSPOT_API_KEY" not defined (Hubspot api key)! Published bcmaps.json will not be updated...')
+  const form = new FormData()
+  form.append('file', Buffer.from(JSON.stringify(bcMaps), 'utf-8'), { contentType: 'application/json', name: 'file', filename: 'bcmaps.json' })
+  form.append('folderPath', hsFolder)
+  form.append('options', JSON.stringify({ access: 'PUBLIC_INDEXABLE', overwrite: true }))
+  const options = { method: 'POST', body: form }
+  const response = await fetch(`https://api.hubapi.com/files/v3/files?hapikey=${hsApiKey}`, options)
+  const { ok, status: statusCode } = response
+  const data = await response.json()
+  if (ok && statusCode === 201) {
+    const fileUrl = data.url
+    console.log(`${new Date().toISOString()} #${transactionSequenceNumber || 0} - published bcMaps.json @ ${fileUrl}`)
+    return fileUrl
+  } else throw Error(JSON.stringify({ statusCode, ...data }))
+}
 
 module.exports = {
   authenticator,
   graphql,
   generateBcMaps,
-  rebuildBcMaps
+  rebuildBcMaps,
+  publishToHubspot
 }

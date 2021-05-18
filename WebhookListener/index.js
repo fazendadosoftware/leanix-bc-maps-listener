@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid')
-const { rebuildBcMaps } = require('./businessLogic')
+const { rebuildBcMaps, publishToHubspot } = require('./businessLogic')
 const auth = require('basic-auth')
 const { LEANIX_USERNAME: username = null, LEANIX_PASSWORD: password = null } = process.env
 if (username === null || password === null) console.warn('APP Settings "LEANIX_USERNAME" and "LEANIX_PASSWORD" should be set for basic auth of POST requests')
@@ -7,6 +7,7 @@ if (username === null || password === null) console.warn('APP Settings "LEANIX_U
 // Initialize global variables for reuse in future calls
 let lastTransaction = -1
 let bcMaps = null
+let fileUrl = null
 
 module.exports = async function (context, req) {
   const { method = null, body: { type, transactionSequenceNumber, factSheet: { type: fsType } = {} } = {} } = req
@@ -15,6 +16,7 @@ module.exports = async function (context, req) {
     if (bcMaps === null) {
       try {
         bcMaps = await rebuildBcMaps(lastTransaction)
+        fileUrl = await publishToHubspot(bcMaps, lastTransaction)
       } catch (error) {
         const timestamp = new Date().toISOString()
         const errorId = uuidv4()
@@ -29,7 +31,7 @@ module.exports = async function (context, req) {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(bcMaps, null, 2)
+      body: JSON.stringify({ ...bcMaps, fileUrl }, null, 2)
     }
   } else if ((type === 'FactSheetUpdatedEvent') && (fsType === 'BusinessCapability') && (lastTransaction < transactionSequenceNumber)) {
     if (username !== null && password !== null) {
@@ -43,6 +45,7 @@ module.exports = async function (context, req) {
     }
     try {
       bcMaps = await rebuildBcMaps(transactionSequenceNumber)
+      fileUrl = await publishToHubspot(bcMaps, transactionSequenceNumber)
       console.log(`${new Date().toISOString()} bcMaps.json updated! #${transactionSequenceNumber} (last was #${lastTransaction}) - ${type} - ${fsType}`)
       lastTransaction = transactionSequenceNumber
     } catch (error) {
